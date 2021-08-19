@@ -1,0 +1,3 @@
+# now pm2 app file is generating on deploy
+.idea
+node_modules
