@@ -38,39 +38,86 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTransfer = exports.getTransaction = void 0;
 var axios_1 = require("axios");
-function getTransaction(address) {
+var bignumber_js_1 = require("bignumber.js");
+function getTransaction(addressTransaction, totalTransaction, versionTransaction) {
     return __awaiter(this, void 0, void 0, function () {
-        var transaction, start, data, total, data_1, value, createCsvWriter_1, headers, i, key, csvWriter, e_1;
+        var transaction, newTransaction_1, _loop_1, i, createCsvWriter, headers, i, key, csvWriter, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 5, , 6]);
                     transaction = [];
-                    start = 0;
-                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=50&contract=" + address + "&start=" + start)];
+                    newTransaction_1 = [];
+                    _loop_1 = function (i) {
+                        var start, limit, data, data_1, newTr, e_2;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
+                                case 0:
+                                    start = 0;
+                                    limit = 50;
+                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=1&contract=" + addressTransaction[i] + "&start=0")];
+                                case 1:
+                                    data = _b.sent();
+                                    _b.label = 2;
+                                case 2:
+                                    if (!(start < data.data.total)) return [3 /*break*/, 9];
+                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=" + limit + "&contract=" + addressTransaction[i] + "&start=" + start)];
+                                case 3:
+                                    data_1 = _b.sent();
+                                    start += limit;
+                                    _b.label = 4;
+                                case 4:
+                                    _b.trys.push([4, 7, , 8]);
+                                    return [4 /*yield*/, data_1.data.data.map(function (event) {
+                                            newTransaction_1 = {
+                                                version: versionTransaction[i],
+                                                block: event.block,
+                                                confirmed: event.confirmed,
+                                                ownAddress: event.ownAddress,
+                                                timestamp: event.timestamp,
+                                                value: event.value,
+                                                toAddress: event.toAddress,
+                                                txHash: event.txHash,
+                                                contractRet: event.contractRet,
+                                            };
+                                            return newTransaction_1;
+                                        })];
+                                case 5:
+                                    newTr = _b.sent();
+                                    console.log(limit, start, data_1.data.total, totalTransaction);
+                                    return [4 /*yield*/, transaction.concat(newTr)];
+                                case 6:
+                                    transaction = _b.sent();
+                                    return [3 /*break*/, 8];
+                                case 7:
+                                    e_2 = _b.sent();
+                                    console.log(e_2);
+                                    return [3 /*break*/, 8];
+                                case 8: return [3 /*break*/, 2];
+                                case 9: return [2 /*return*/];
+                            }
+                        });
+                    };
+                    i = 0;
+                    _a.label = 1;
                 case 1:
-                    data = _a.sent();
-                    total = data.data.total;
-                    _a.label = 2;
+                    if (!(i < addressTransaction.length)) return [3 /*break*/, 4];
+                    return [5 /*yield**/, _loop_1(i)];
                 case 2:
-                    if (!(start < total)) return [3 /*break*/, 4];
-                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=50&contract=" + address + "&start=" + start)];
+                    _a.sent();
+                    _a.label = 3;
                 case 3:
-                    data_1 = _a.sent();
-                    value = 50;
-                    start += value;
-                    transaction = transaction.concat(data_1.data.data);
-                    console.log(transaction.length, data_1.data.data.length, total);
-                    return [3 /*break*/, 2];
+                    i++;
+                    return [3 /*break*/, 1];
                 case 4:
-                    createCsvWriter_1 = require('csv-writer').createObjectCsvWriter;
+                    createCsvWriter = require('csv-writer').createObjectCsvWriter;
                     headers = [];
                     for (i = 0; i < Object.keys(transaction[0]).length; i++) {
                         key = Object.keys(transaction[0])[i];
                         headers.push({ id: key, title: key });
                     }
-                    csvWriter = createCsvWriter_1({
-                        path: "Transaction/" + address + ".csv",
+                    csvWriter = createCsvWriter({
+                        path: "Transaction.csv",
                         header: headers
                     });
                     console.log(csvWriter.writeRecords(transaction));
@@ -85,47 +132,99 @@ function getTransaction(address) {
     });
 }
 exports.getTransaction = getTransaction;
-function getTransfer(address) {
+function getTransfer(addressTransfer, totalTransfer, versionTransfer) {
     return __awaiter(this, void 0, void 0, function () {
-        var transfer, start, limit, data, total, data_2, createCsvWriter_2, headers, i, key, csvWriter, e_2;
+        var transfer, newTransfer_1, _loop_2, i, createCsvWriter, headers, i, key, csvWriter, e_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 5, , 6]);
                     transfer = [];
-                    start = 0;
-                    limit = 40;
-                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/token_trc20/transfers?limit=" + limit + "&start=" + start + "&sort=-timestamp&count=true&relatedAddress=" + address)];
+                    newTransfer_1 = [];
+                    _loop_2 = function (i) {
+                        var start, limit, data, data_2, newTr, e_4;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
+                                case 0:
+                                    start = 0;
+                                    limit = 40;
+                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/token_trc20/transfers?limit=1&start=0&sort=-timestamp&count=true&relatedAddress=" + addressTransfer[i])];
+                                case 1:
+                                    data = _b.sent();
+                                    _b.label = 2;
+                                case 2:
+                                    if (!(start < data.data.total)) return [3 /*break*/, 8];
+                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/token_trc20/transfers?limit=" + limit + "&start=" + start + "&sort=-timestamp&count=true&relatedAddress=" + addressTransfer[i])];
+                                case 3:
+                                    data_2 = _b.sent();
+                                    start += limit;
+                                    _b.label = 4;
+                                case 4:
+                                    _b.trys.push([4, 6, , 7]);
+                                    newTr = data_2.data.token_transfers.map(function (event) {
+                                        var valueQuant = event.quant;
+                                        if (event.tokenInfo.tokenAbbr === "WDX") {
+                                            valueQuant = Number(new bignumber_js_1.default(event.quant).shiftedBy(-18));
+                                        }
+                                        if (event.tokenInfo.tokenAbbr === "USDT") {
+                                            valueQuant = Number(new bignumber_js_1.default(event.quant).shiftedBy(-6));
+                                        }
+                                        newTransfer_1 = {
+                                            version: versionTransfer[i],
+                                            transaction_id: event.transaction_id,
+                                            block: event.block,
+                                            block_ts: event.block_ts,
+                                            from_address: event.from_address,
+                                            to_address: event.to_address,
+                                            confirmed: event.confirmed,
+                                            contractRet: event.contractRet,
+                                            quantity: valueQuant,
+                                            toAddressIsContract: event.toAddressIsContract,
+                                            tokenInfo: event.tokenInfo.tokenAbbr
+                                        };
+                                        return newTransfer_1;
+                                    });
+                                    console.log(limit, start, data_2.data.total, totalTransfer);
+                                    return [4 /*yield*/, transfer.concat(newTr)];
+                                case 5:
+                                    transfer = _b.sent();
+                                    return [3 /*break*/, 7];
+                                case 6:
+                                    e_4 = _b.sent();
+                                    console.log(e_4);
+                                    return [3 /*break*/, 7];
+                                case 7: return [3 /*break*/, 2];
+                                case 8: return [2 /*return*/];
+                            }
+                        });
+                    };
+                    i = 0;
+                    _a.label = 1;
                 case 1:
-                    data = _a.sent();
-                    total = data.data.total;
-                    console.log(total);
-                    _a.label = 2;
+                    if (!(i < addressTransfer.length)) return [3 /*break*/, 4];
+                    return [5 /*yield**/, _loop_2(i)];
                 case 2:
-                    if (!(start < total)) return [3 /*break*/, 4];
-                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/token_trc20/transfers?limit=" + limit + "&start=" + start + "&sort=-timestamp&count=true&relatedAddress=" + address)];
+                    _a.sent();
+                    _a.label = 3;
                 case 3:
-                    data_2 = _a.sent();
-                    start += limit;
-                    transfer = transfer.concat(data_2.data.token_transfers);
-                    console.log(data_2.data.token_transfers.length, transfer.length, start, total);
-                    return [3 /*break*/, 2];
+                    i++;
+                    return [3 /*break*/, 1];
                 case 4:
-                    createCsvWriter_2 = require('csv-writer').createObjectCsvWriter;
+                    createCsvWriter = require('csv-writer').createObjectCsvWriter;
                     headers = [];
                     for (i = 0; i < Object.keys(transfer[0]).length; i++) {
                         key = Object.keys(transfer[0])[i];
                         headers.push({ id: key, title: key });
                     }
-                    csvWriter = createCsvWriter_2({
-                        path: "Transfer_" + address + ".csv",
+                    csvWriter = createCsvWriter({
+                        path: "Transfer.csv",
                         header: headers
                     });
                     console.log(csvWriter.writeRecords(transfer));
                     return [3 /*break*/, 6];
                 case 5:
-                    e_2 = _a.sent();
-                    console.log('getTransaction', e_2);
+                    e_3 = _a.sent();
+                    console.log('getTransaction', e_3);
                     return [3 /*break*/, 6];
                 case 6: return [2 /*return*/];
             }
