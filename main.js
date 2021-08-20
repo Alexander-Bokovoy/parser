@@ -38,15 +38,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var parse_1 = require("./parse");
 var axios_1 = require("axios");
+// import {getFile} from "./file";
 // TODO ::  Specify values for parsing.
 //  Example (address = [{address:"",version: Number, type:""}])
 var address = [
     { address: "TYC4g42yFXeqQd5gJTqueo4hjtZ3BqnVry", version: 1, type: "Transfer" },
     { address: "T9yJ5EAE8RHtWtaWzSknZuyUgvV62ttPA3", version: 2, type: "Transfer" },
     { address: "TEi3KvzSdDieDD4tFARz8NJ3SSU2z17ZcD", version: 3, type: "Transfer" },
-    { address: "TApCMGcW6ZQW3vY7u6Bhrec43WyHBao4QA", version: 1, type: "Transaction" },
-    { address: "TBSPijU2HsBe6RaZc6NkFRcQ9cJjMBqGzZ", version: 2, type: "Transaction" },
-    { address: "TSvMwjUxYkLjavUvMQe9d4FyEe5FJeeyX3", version: 3, type: "Transaction" },
+    // {address: "TApCMGcW6ZQW3vY7u6Bhrec43WyHBao4QA", version: 1, type: "Transaction"},
+    // {address: "TBSPijU2HsBe6RaZc6NkFRcQ9cJjMBqGzZ", version: 2, type: "Transaction"},
+    // {address: "TSvMwjUxYkLjavUvMQe9d4FyEe5FJeeyX3", version: 3, type: "Transaction"},
 ];
 var init = function () { return __awaiter(void 0, void 0, void 0, function () {
     var versionTransfer, addressTransfer, totalTransfer, versionTransaction, addressTransaction, totalTransaction, i, types, data, _a, data, _b;
@@ -93,7 +94,9 @@ var init = function () { return __awaiter(void 0, void 0, void 0, function () {
             case 8: return [4 /*yield*/, parse_1.getTransaction(addressTransaction, totalTransaction, versionTransaction)];
             case 9:
                 _c.sent();
-                return [4 /*yield*/, parse_1.getTransfer(addressTransfer, totalTransfer, versionTransfer)];
+                return [4 /*yield*/, parse_1.getTransfer(addressTransfer, totalTransfer, versionTransfer)
+                    // await getFile(address)
+                ];
             case 10:
                 _c.sent();
                 return [2 /*return*/];

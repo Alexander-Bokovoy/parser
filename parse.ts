@@ -15,12 +15,14 @@ export async function getTransaction(addressTransaction, totalTransaction, versi
                 start += limit
                 try {
                     let newTr = await data.data.data.map(event => {
+                        let date = new Date(event.timestamp).toISOString()
                         newTransaction = {
                             version: versionTransaction[i],
+                            contract:addressTransaction[i],
                             block: event.block,
                             confirmed: event.confirmed,
                             ownAddress: event.ownAddress,
-                            timestamp: event.timestamp,
+                            timestamp: date,
                             value: event.value,
                             toAddress: event.toAddress,
                             txHash: event.txHash,
@@ -63,7 +65,8 @@ export async function getTransfer(addressTransfer, totalTransfer, versionTransfe
                 let data: any = await axios.get(`https://apilist.tronscan.org/api/token_trc20/transfers?limit=${limit}&start=${start}&sort=-timestamp&count=true&relatedAddress=${addressTransfer[i]}`)
                 start += limit
                 try {
-                    let newTr = data.data.token_transfers.map(event => {
+                    let newTr = await data.data.token_transfers.map(event => {
+                        let date = new Date(event.block_ts).toISOString()
                         let valueQuant = event.quant
                         if (event.tokenInfo.tokenAbbr === "WDX") {
                             valueQuant = Number(new BigNumber(event.quant).shiftedBy(-18))
@@ -73,9 +76,10 @@ export async function getTransfer(addressTransfer, totalTransfer, versionTransfe
                         }
                         newTransfer = {
                             version: versionTransfer[i],
+                            contract: addressTransfer[i],
                             transaction_id: event.transaction_id,
                             block: event.block,
-                            block_ts: event.block_ts,
+                            block_ts: date,
                             from_address: event.from_address,
                             to_address: event.to_address,
                             confirmed: event.confirmed,

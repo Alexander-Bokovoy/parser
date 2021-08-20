@@ -1,5 +1,6 @@
 import {getTransaction, getTransfer} from "./parse";
 import axios from "axios";
+// import {getFile} from "./file";
 
 // TODO ::  Specify values for parsing.
 //  Example (address = [{address:"",version: Number, type:""}])
@@ -14,7 +15,6 @@ const address = [
 ]
 
 const init = async () => {
-
     let versionTransfer = []
     let addressTransfer = []
     let totalTransfer = 0
@@ -38,5 +38,8 @@ const init = async () => {
     }
     await getTransaction(addressTransaction, totalTransaction, versionTransaction)
     await getTransfer(addressTransfer, totalTransfer, versionTransfer)
+
+
+    // await getFile(address)
 };
 init();

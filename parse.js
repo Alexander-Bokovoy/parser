@@ -69,12 +69,14 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                 case 4:
                                     _b.trys.push([4, 7, , 8]);
                                     return [4 /*yield*/, data_1.data.data.map(function (event) {
+                                            var date = new Date(event.timestamp).toISOString();
                                             newTransaction_1 = {
                                                 version: versionTransaction[i],
+                                                contract: addressTransaction[i],
                                                 block: event.block,
                                                 confirmed: event.confirmed,
                                                 ownAddress: event.ownAddress,
-                                                timestamp: event.timestamp,
+                                                timestamp: date,
                                                 value: event.value,
                                                 toAddress: event.toAddress,
                                                 txHash: event.txHash,
@@ -153,48 +155,52 @@ function getTransfer(addressTransfer, totalTransfer, versionTransfer) {
                                     data = _b.sent();
                                     _b.label = 2;
                                 case 2:
-                                    if (!(start < data.data.total)) return [3 /*break*/, 8];
+                                    if (!(start < data.data.total)) return [3 /*break*/, 9];
                                     return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/token_trc20/transfers?limit=" + limit + "&start=" + start + "&sort=-timestamp&count=true&relatedAddress=" + addressTransfer[i])];
                                 case 3:
                                     data_2 = _b.sent();
                                     start += limit;
                                     _b.label = 4;
                                 case 4:
-                                    _b.trys.push([4, 6, , 7]);
-                                    newTr = data_2.data.token_transfers.map(function (event) {
-                                        var valueQuant = event.quant;
-                                        if (event.tokenInfo.tokenAbbr === "WDX") {
-                                            valueQuant = Number(new bignumber_js_1.default(event.quant).shiftedBy(-18));
-                                        }
-                                        if (event.tokenInfo.tokenAbbr === "USDT") {
-                                            valueQuant = Number(new bignumber_js_1.default(event.quant).shiftedBy(-6));
-                                        }
-                                        newTransfer_1 = {
-                                            version: versionTransfer[i],
-                                            transaction_id: event.transaction_id,
-                                            block: event.block,
-                                            block_ts: event.block_ts,
-                                            from_address: event.from_address,
-                                            to_address: event.to_address,
-                                            confirmed: event.confirmed,
-                                            contractRet: event.contractRet,
-                                            quantity: valueQuant,
-                                            toAddressIsContract: event.toAddressIsContract,
-                                            tokenInfo: event.tokenInfo.tokenAbbr
-                                        };
-                                        return newTransfer_1;
-                                    });
+                                    _b.trys.push([4, 7, , 8]);
+                                    return [4 /*yield*/, data_2.data.token_transfers.map(function (event) {
+                                            var date = new Date(event.block_ts).toISOString();
+                                            var valueQuant = event.quant;
+                                            if (event.tokenInfo.tokenAbbr === "WDX") {
+                                                valueQuant = Number(new bignumber_js_1.default(event.quant).shiftedBy(-18));
+                                            }
+                                            if (event.tokenInfo.tokenAbbr === "USDT") {
+                                                valueQuant = Number(new bignumber_js_1.default(event.quant).shiftedBy(-6));
+                                            }
+                                            newTransfer_1 = {
+                                                version: versionTransfer[i],
+                                                contract: addressTransfer[i],
+                                                transaction_id: event.transaction_id,
+                                                block: event.block,
+                                                block_ts: date,
+                                                from_address: event.from_address,
+                                                to_address: event.to_address,
+                                                confirmed: event.confirmed,
+                                                contractRet: event.contractRet,
+                                                quantity: valueQuant,
+                                                toAddressIsContract: event.toAddressIsContract,
+                                                tokenInfo: event.tokenInfo.tokenAbbr
+                                            };
+                                            return newTransfer_1;
+                                        })];
+                                case 5:
+                                    newTr = _b.sent();
                                     console.log(limit, start, data_2.data.total, totalTransfer);
                                     return [4 /*yield*/, transfer.concat(newTr)];
-                                case 5:
-                                    transfer = _b.sent();
-                                    return [3 /*break*/, 7];
                                 case 6:
+                                    transfer = _b.sent();
+                                    return [3 /*break*/, 8];
+                                case 7:
                                     e_4 = _b.sent();
                                     console.log(e_4);
-                                    return [3 /*break*/, 7];
-                                case 7: return [3 /*break*/, 2];
-                                case 8: return [2 /*return*/];
+                                    return [3 /*break*/, 8];
+                                case 8: return [3 /*break*/, 2];
+                                case 9: return [2 /*return*/];
                             }
                         });
                     };
