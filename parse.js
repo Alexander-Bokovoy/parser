@@ -39,64 +39,138 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTransfer = exports.getTransaction = void 0;
 var axios_1 = require("axios");
 var bignumber_js_1 = require("bignumber.js");
-function getTransaction(addressTransaction, totalTransaction, versionTransaction) {
+function getTransaction(addressTransaction, totalTransaction, versionTransaction, contrType) {
     return __awaiter(this, void 0, void 0, function () {
-        var transaction, newTransaction_1, _loop_1, i, createCsvWriter, headers, i, key, csvWriter, e_1;
+        var transaction, newTransaction, _loop_1, i, createCsvWriter, headers, i, key, csvWriter, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 5, , 6]);
                     transaction = [];
-                    newTransaction_1 = [];
+                    newTransaction = [];
                     _loop_1 = function (i) {
-                        var start, limit, data, data_1, newTr, e_2;
+                        var limit, start, data, total, _loop_2;
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
-                                    start = 0;
                                     limit = 50;
+                                    start = 0;
                                     return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=1&contract=" + addressTransaction[i] + "&start=0")];
                                 case 1:
                                     data = _b.sent();
+                                    total = data.data.total;
+                                    _loop_2 = function () {
+                                        var data_2, hashAmounts_1, _loop_3, _i, data_1, trans, newTr, e_2;
+                                        return __generator(this, function (_c) {
+                                            switch (_c.label) {
+                                                case 0:
+                                                    if ((total - start) < limit) {
+                                                        limit = total - start;
+                                                    }
+                                                    return [4 /*yield*/, axios_1.default
+                                                            .get("https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=" + limit + "&contract=" + addressTransaction[i] + "&start=" + start)];
+                                                case 1:
+                                                    data_2 = (_c.sent()).data.data;
+                                                    start += limit;
+                                                    _c.label = 2;
+                                                case 2:
+                                                    _c.trys.push([2, 9, , 10]);
+                                                    hashAmounts_1 = {};
+                                                    _loop_3 = function (trans) {
+                                                        var trInfo, _d, trigger_info, internal_transactions, internalTransactions, tokenDecimal_1, internalTransactions;
+                                                        return __generator(this, function (_e) {
+                                                            switch (_e.label) {
+                                                                case 0:
+                                                                    if (!(trans.hasOwnProperty('txHash') && trans.txHash)) return [3 /*break*/, 2];
+                                                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/transaction-info?hash=" + trans.txHash)];
+                                                                case 1:
+                                                                    trInfo = _e.sent();
+                                                                    _d = trInfo.data, trigger_info = _d.trigger_info, internal_transactions = _d.internal_transactions;
+                                                                    if (trigger_info.method.toLowerCase().includes('claim')) {
+                                                                        if (trigger_info.parameter._amount) {
+                                                                            internalTransactions = Object.values(internal_transactions);
+                                                                            internalTransactions.forEach(function (items) {
+                                                                                !tokenDecimal_1 && items.forEach(function (transactionData) {
+                                                                                    if (transactionData.token_list && transactionData.token_list.length) {
+                                                                                        tokenDecimal_1 = transactionData.token_list[0].tokenInfo.tokenDecimal;
+                                                                                    }
+                                                                                });
+                                                                            });
+                                                                            hashAmounts_1[trans.txHash] = Number(tokenDecimal_1
+                                                                                ? new bignumber_js_1.default(trigger_info.parameter._amount).shiftedBy(-tokenDecimal_1)
+                                                                                : trigger_info.parameter._amount);
+                                                                        }
+                                                                        else if (internal_transactions) {
+                                                                            internalTransactions = Object.values(internal_transactions);
+                                                                            hashAmounts_1[trans.txHash] = internalTransactions.reduce(function (acc, items) {
+                                                                                var value = items.reduce(function (a, transactionData) {
+                                                                                    var tokenValue = 0;
+                                                                                    if (transactionData.token_list && transactionData.token_list.length) {
+                                                                                        tokenValue = transactionData.token_list
+                                                                                            .reduce(function (ac, val) { return ac + Number(new bignumber_js_1.default(val.call_value).shiftedBy(-val.tokenInfo.tokenDecimal)); }, 0);
+                                                                                    }
+                                                                                    return tokenValue + a;
+                                                                                }, 0);
+                                                                                return value + acc;
+                                                                            }, 0);
+                                                                        }
+                                                                    }
+                                                                    _e.label = 2;
+                                                                case 2: return [2 /*return*/];
+                                                            }
+                                                        });
+                                                    };
+                                                    _i = 0, data_1 = data_2;
+                                                    _c.label = 3;
+                                                case 3:
+                                                    if (!(_i < data_1.length)) return [3 /*break*/, 6];
+                                                    trans = data_1[_i];
+                                                    return [5 /*yield**/, _loop_3(trans)];
+                                                case 4:
+                                                    _c.sent();
+                                                    _c.label = 5;
+                                                case 5:
+                                                    _i++;
+                                                    return [3 /*break*/, 3];
+                                                case 6:
+                                                    console.log('hashAmounts', hashAmounts_1);
+                                                    return [4 /*yield*/, data_2.map(function (event) { return ({
+                                                            version: versionTransaction[i],
+                                                            contract_type: contrType[i],
+                                                            contract: addressTransaction[i],
+                                                            block: event.block,
+                                                            confirmed: event.confirmed,
+                                                            ownAddress: event.ownAddress,
+                                                            timestamp: new Date(event.timestamp).toISOString(),
+                                                            value: event.value,
+                                                            toAddress: event.toAddress,
+                                                            txHash: event.txHash,
+                                                            contractRet: event.contractRet,
+                                                            amount: hashAmounts_1[event.txHash] ? hashAmounts_1[event.txHash] : null,
+                                                        }); })];
+                                                case 7:
+                                                    newTr = _c.sent();
+                                                    console.log(limit, start, total, totalTransaction);
+                                                    return [4 /*yield*/, transaction.concat(newTr)];
+                                                case 8:
+                                                    transaction = _c.sent();
+                                                    return [3 /*break*/, 10];
+                                                case 9:
+                                                    e_2 = _c.sent();
+                                                    console.log(e_2);
+                                                    return [3 /*break*/, 10];
+                                                case 10: return [2 /*return*/];
+                                            }
+                                        });
+                                    };
                                     _b.label = 2;
                                 case 2:
-                                    if (!(start < data.data.total)) return [3 /*break*/, 9];
-                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=" + limit + "&contract=" + addressTransaction[i] + "&start=" + start)];
+                                    if (!(start < total)) return [3 /*break*/, 4];
+                                    return [5 /*yield**/, _loop_2()];
                                 case 3:
-                                    data_1 = _b.sent();
-                                    start += limit;
-                                    _b.label = 4;
-                                case 4:
-                                    _b.trys.push([4, 7, , 8]);
-                                    return [4 /*yield*/, data_1.data.data.map(function (event) {
-                                            var date = new Date(event.timestamp).toISOString();
-                                            newTransaction_1 = {
-                                                version: versionTransaction[i],
-                                                contract: addressTransaction[i],
-                                                block: event.block,
-                                                confirmed: event.confirmed,
-                                                ownAddress: event.ownAddress,
-                                                timestamp: date,
-                                                value: event.value,
-                                                toAddress: event.toAddress,
-                                                txHash: event.txHash,
-                                                contractRet: event.contractRet,
-                                            };
-                                            return newTransaction_1;
-                                        })];
-                                case 5:
-                                    newTr = _b.sent();
-                                    console.log(limit, start, data_1.data.total, totalTransaction);
-                                    return [4 /*yield*/, transaction.concat(newTr)];
-                                case 6:
-                                    transaction = _b.sent();
-                                    return [3 /*break*/, 8];
-                                case 7:
-                                    e_2 = _b.sent();
-                                    console.log(e_2);
-                                    return [3 /*break*/, 8];
-                                case 8: return [3 /*break*/, 2];
-                                case 9: return [2 /*return*/];
+                                    _b.sent();
+                                    return [3 /*break*/, 2];
+                                case 4: return [2 /*return*/];
                             }
                         });
                     };
@@ -136,15 +210,15 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
 exports.getTransaction = getTransaction;
 function getTransfer(addressTransfer, totalTransfer, versionTransfer) {
     return __awaiter(this, void 0, void 0, function () {
-        var transfer, newTransfer_1, _loop_2, i, createCsvWriter, headers, i, key, csvWriter, e_3;
+        var transfer, newTransfer_1, _loop_4, i, createCsvWriter, headers, i, key, csvWriter, e_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 5, , 6]);
                     transfer = [];
                     newTransfer_1 = [];
-                    _loop_2 = function (i) {
-                        var start, limit, data, data_2, newTr, e_4;
+                    _loop_4 = function (i) {
+                        var start, limit, data, data_3, newTr, e_4;
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
@@ -158,12 +232,12 @@ function getTransfer(addressTransfer, totalTransfer, versionTransfer) {
                                     if (!(start < data.data.total)) return [3 /*break*/, 9];
                                     return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/token_trc20/transfers?limit=" + limit + "&start=" + start + "&sort=-timestamp&count=true&relatedAddress=" + addressTransfer[i])];
                                 case 3:
-                                    data_2 = _b.sent();
+                                    data_3 = _b.sent();
                                     start += limit;
                                     _b.label = 4;
                                 case 4:
                                     _b.trys.push([4, 7, , 8]);
-                                    return [4 /*yield*/, data_2.data.token_transfers.map(function (event) {
+                                    return [4 /*yield*/, data_3.data.token_transfers.map(function (event) {
                                             var date = new Date(event.block_ts).toISOString();
                                             var valueQuant = event.quant;
                                             if (event.tokenInfo.tokenAbbr === "WDX") {
@@ -190,7 +264,7 @@ function getTransfer(addressTransfer, totalTransfer, versionTransfer) {
                                         })];
                                 case 5:
                                     newTr = _b.sent();
-                                    console.log(limit, start, data_2.data.total, totalTransfer);
+                                    console.log(limit, start, data_3.data.total, totalTransfer);
                                     return [4 /*yield*/, transfer.concat(newTr)];
                                 case 6:
                                     transfer = _b.sent();
@@ -208,7 +282,7 @@ function getTransfer(addressTransfer, totalTransfer, versionTransfer) {
                     _a.label = 1;
                 case 1:
                     if (!(i < addressTransfer.length)) return [3 /*break*/, 4];
-                    return [5 /*yield**/, _loop_2(i)];
+                    return [5 /*yield**/, _loop_4(i)];
                 case 2:
                     _a.sent();
                     _a.label = 3;

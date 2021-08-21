@@ -2,35 +2,81 @@ import axios from "axios";
 import BigNumber from "bignumber.js";
 
 
-export async function getTransaction(addressTransaction, totalTransaction, versionTransaction) {
+export async function getTransaction(addressTransaction, totalTransaction, versionTransaction, contrType) {
     try {
         let transaction: any = []
         let newTransaction: any = []
         for (let i = 0; i < addressTransaction.length; i++) {
-            let start = 0
             let limit = 50
+            let start = 0
             let data: any = await axios.get(`https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=1&contract=${addressTransaction[i]}&start=0`)
-            while (start < data.data.total) {
-                let data: any = await axios.get(`https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=${limit}&contract=${addressTransaction[i]}&start=${start}`)
+            let total = data.data.total
+            while (start < total) {
+                if ((total - start) < limit) {
+                    limit = total - start
+                }
+                const data: any = (await axios
+                        .get(`https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=${limit}&contract=${addressTransaction[i]}&start=${start}`)
+                ).data.data
                 start += limit
                 try {
-                    let newTr = await data.data.data.map(event => {
-                        let date = new Date(event.timestamp).toISOString()
-                        newTransaction = {
-                            version: versionTransaction[i],
-                            contract:addressTransaction[i],
-                            block: event.block,
-                            confirmed: event.confirmed,
-                            ownAddress: event.ownAddress,
-                            timestamp: date,
-                            value: event.value,
-                            toAddress: event.toAddress,
-                            txHash: event.txHash,
-                            contractRet: event.contractRet,
+                    const hashAmounts = {};
+                    for (const trans of data) {
+                        if (trans.hasOwnProperty('txHash') && trans.txHash) {
+                            let trInfo: any = await axios.get(`https://apilist.tronscan.org/api/transaction-info?hash=${trans.txHash}`)
+                            const {trigger_info, internal_transactions,} = trInfo.data
+                            if (trigger_info.method.toLowerCase().includes('claim')) {
+                                if (trigger_info.parameter._amount) {
+                                    const internalTransactions: any = Object.values(internal_transactions);
+                                    let tokenDecimal;
+                                    internalTransactions.forEach(items => {
+                                        !tokenDecimal && items.forEach(transactionData => {
+                                            if (transactionData.token_list && transactionData.token_list.length) {
+                                                tokenDecimal = transactionData.token_list[0].tokenInfo.tokenDecimal
+                                            }
+                                        })
+                                    })
+
+                                    hashAmounts[trans.txHash] = Number(tokenDecimal
+                                        ? new BigNumber(trigger_info.parameter._amount).shiftedBy(-tokenDecimal)
+                                        : trigger_info.parameter._amount
+                                    )
+                                } else if (internal_transactions) {
+                                    const internalTransactions: any = Object.values(internal_transactions);
+                                    hashAmounts[trans.txHash] = internalTransactions.reduce((acc, items) => {
+                                        const value = items.reduce((a, transactionData) => {
+                                            let tokenValue = 0;
+                                            if (transactionData.token_list && transactionData.token_list.length) {
+                                                tokenValue = transactionData.token_list
+                                                    .reduce((ac, val) => ac + Number(new BigNumber(val.call_value).shiftedBy(-val.tokenInfo.tokenDecimal)), 0)
+                                            }
+                                            return tokenValue + a;
+                                        }, 0)
+
+                                        return value + acc;
+                                    }, 0)
+                                }
+                            }
                         }
-                        return newTransaction
-                    })
-                    console.log(limit, start, data.data.total, totalTransaction)
+                    }
+
+                    console.log('hashAmounts', hashAmounts)
+                    const newTr = await data.map(event => ({
+                        version: versionTransaction[i],
+                        contract_type: contrType[i],
+                        contract: addressTransaction[i],
+                        block: event.block,
+                        confirmed: event.confirmed,
+                        ownAddress: event.ownAddress,
+                        timestamp: new Date(event.timestamp).toISOString(),
+                        value: event.value,
+                        toAddress: event.toAddress,
+                        txHash: event.txHash,
+                        contractRet: event.contractRet,
+                        amount: hashAmounts[event.txHash] ? hashAmounts[event.txHash] : null,
+                    }));
+
+                    console.log(limit, start, total, totalTransaction)
                     transaction = await transaction.concat(newTr)
                 } catch (e) {
                     console.log(e)
