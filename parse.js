@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -77,7 +88,7 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                     _c.trys.push([2, 9, , 10]);
                                                     hashAmounts_1 = {};
                                                     _loop_3 = function (trans) {
-                                                        var trInfo, _d, trigger_info, internal_transactions, internalTransactions, tokenDecimal_1, internalTransactions;
+                                                        var trInfo, _d, trigger_info, internal_transactions, methodName, tokenDecimal, internalTransactions, internalTransactions;
                                                         return __generator(this, function (_e) {
                                                             switch (_e.label) {
                                                                 case 0:
@@ -86,26 +97,37 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                                 case 1:
                                                                     trInfo = _e.sent();
                                                                     _d = trInfo.data, trigger_info = _d.trigger_info, internal_transactions = _d.internal_transactions;
-                                                                    if (trigger_info.method.toLowerCase().includes('claim')) {
+                                                                    methodName = trigger_info.method.toLowerCase();
+                                                                    if (methodName.includes('claim')) {
                                                                         if (trigger_info.parameter._amount) {
+                                                                            hashAmounts_1[trans.txHash] = {
+                                                                                method: trigger_info.method,
+                                                                                token_info: null,
+                                                                            };
+                                                                            tokenDecimal = methodName.includes('wdx') ? 18 : 6;
                                                                             internalTransactions = Object.values(internal_transactions);
                                                                             internalTransactions.forEach(function (items) {
-                                                                                !tokenDecimal_1 && items.forEach(function (transactionData) {
+                                                                                console.log(hashAmounts_1[trans.txHash]);
+                                                                                !hashAmounts_1[trans.txHash].token_info && items.forEach(function (transactionData) {
                                                                                     if (transactionData.token_list && transactionData.token_list.length) {
-                                                                                        tokenDecimal_1 = transactionData.token_list[0].tokenInfo.tokenDecimal;
+                                                                                        hashAmounts_1[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName;
                                                                                     }
                                                                                 });
                                                                             });
-                                                                            hashAmounts_1[trans.txHash] = Number(tokenDecimal_1
-                                                                                ? new bignumber_js_1.default(trigger_info.parameter._amount).shiftedBy(-tokenDecimal_1)
-                                                                                : trigger_info.parameter._amount);
+                                                                            hashAmounts_1[trans.txHash].amount = Number(tokenDecimal
+                                                                                ? new bignumber_js_1.default(trigger_info.parameter._amount).shiftedBy(-tokenDecimal)
+                                                                                : (trigger_info.parameter._amount || 0));
                                                                         }
                                                                         else if (internal_transactions) {
+                                                                            hashAmounts_1[trans.txHash] = {
+                                                                                method: trigger_info.method,
+                                                                            };
                                                                             internalTransactions = Object.values(internal_transactions);
-                                                                            hashAmounts_1[trans.txHash] = internalTransactions.reduce(function (acc, items) {
+                                                                            hashAmounts_1[trans.txHash].amount = internalTransactions.reduce(function (acc, items) {
                                                                                 var value = items.reduce(function (a, transactionData) {
                                                                                     var tokenValue = 0;
                                                                                     if (transactionData.token_list && transactionData.token_list.length) {
+                                                                                        hashAmounts_1[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName;
                                                                                         tokenValue = transactionData.token_list
                                                                                             .reduce(function (ac, val) { return ac + Number(new bignumber_js_1.default(val.call_value).shiftedBy(-val.tokenInfo.tokenDecimal)); }, 0);
                                                                                     }
@@ -132,22 +154,9 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                 case 5:
                                                     _i++;
                                                     return [3 /*break*/, 3];
-                                                case 6:
-                                                    console.log('hashAmounts', hashAmounts_1);
-                                                    return [4 /*yield*/, data_2.map(function (event) { return ({
-                                                            version: versionTransaction[i],
-                                                            contract_type: contrType[i],
-                                                            contract: addressTransaction[i],
-                                                            block: event.block,
-                                                            confirmed: event.confirmed,
-                                                            ownAddress: event.ownAddress,
-                                                            timestamp: new Date(event.timestamp).toISOString(),
-                                                            value: event.value,
-                                                            toAddress: event.toAddress,
-                                                            txHash: event.txHash,
-                                                            contractRet: event.contractRet,
-                                                            amount: hashAmounts_1[event.txHash] ? hashAmounts_1[event.txHash] : null,
-                                                        }); })];
+                                                case 6: return [4 /*yield*/, data_2
+                                                        .filter(function (item) { return Object.keys(hashAmounts_1).includes(item.txHash); })
+                                                        .map(function (event) { return (__assign({ version: versionTransaction[i], contract_type: contrType[i], block: event.block, confirmed: event.confirmed, ownAddress: event.ownAddress, timestamp: new Date(event.timestamp).toISOString(), value: event.value, toAddress: event.toAddress, txHash: event.txHash, contractRet: event.contractRet }, hashAmounts_1[event.txHash])); })];
                                                 case 7:
                                                     newTr = _c.sent();
                                                     console.log(limit, start, total, totalTransaction);
