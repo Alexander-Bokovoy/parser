@@ -1,12 +1,10 @@
 import axios from "axios";
 import BigNumber from "bignumber.js";
-import {log} from "util";
 
 
 export async function getTransaction(addressTransaction, totalTransaction, versionTransaction, contrType) {
     try {
         let transaction: any = []
-        let newTransaction: any = []
         for (let i = 0; i < addressTransaction.length; i++) {
             let limit = 50
             let start = 0
@@ -25,47 +23,52 @@ export async function getTransaction(addressTransaction, totalTransaction, versi
                     for (const trans of data) {
                         if (trans.hasOwnProperty('txHash') && trans.txHash) {
                             let trInfo: any = await axios.get(`https://apilist.tronscan.org/api/transaction-info?hash=${trans.txHash}`)
-                            const {trigger_info, internal_transactions,} = trInfo.data
+                            const {trigger_info, internal_transactions, contractRet} = trInfo.data
                             const methodName = trigger_info.method.toLowerCase();
-                            if (methodName.includes('claim')) {
-                                if (trigger_info.parameter._amount) {
-                                    hashAmounts[trans.txHash] = {
-                                        method: trigger_info.method,
-                                        token_info: null,
-                                    };
-                                    const tokenDecimal = methodName.includes('wdx') ? 18 : 6;
-                                    const internalTransactions: any = Object.values(internal_transactions);
-                                    internalTransactions.forEach(items => {
-                                        console.log(hashAmounts[trans.txHash])
-                                        !hashAmounts[trans.txHash].token_info && items.forEach(transactionData => {
-                                            if (transactionData.token_list && transactionData.token_list.length) {
-                                                hashAmounts[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName
-                                            }
+                            // Unstake
+                            if (methodName.includes('Unstake')) {
+                                if (contractRet === 'SUCCESS') {
+                                    if (trigger_info.parameter._amount) {
+                                        hashAmounts[trans.txHash] = {
+                                            method: trigger_info.method,
+                                            token_info: null,
+                                        };
+                                        const internalTransactions: any = Object.values(internal_transactions);
+                                        internalTransactions.forEach(items => {
+                                            !hashAmounts[trans.txHash].token_info && items.forEach(transactionData => {
+                                                if (transactionData.token_list && transactionData.token_list.length) {
+                                                    hashAmounts[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName
+                                                }
+                                            })
                                         })
-                                    })
+                                        // tokenDecimal
+                                        hashAmounts[trans.txHash].amount = Number
+                                            ? new BigNumber(trigger_info.parameter._amount).shiftedBy(-18)
+                                            : (trigger_info.parameter._amount || 0
+                                            )
+                                    } else if (internal_transactions) {
+                                        hashAmounts[trans.txHash] = {
+                                            method: trigger_info.method,
+                                        };
+                                        const internalTransactions: any = Object.values(internal_transactions);
+                                        hashAmounts[trans.txHash].amount = internalTransactions.reduce((acc, items) => {
+                                            const value = items.reduce((a, transactionData) => {
+                                                let tokenValue = 0;
+                                                if (transactionData.token_list && transactionData.token_list.length) {
+                                                    hashAmounts[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName;
+                                                    let jgjgjg = transactionData.token_list as object[]
+                                                    for (const token of jgjgjg) {
+                                                        // @ts-ignore
+                                                        tokenValue += Number(new BigNumber(token.call_value).shiftedBy(-18))
+                                                    }
+                                                    console.log(tokenValue, "tokenValue")
+                                                }
+                                                return tokenValue + a;
+                                            }, 0)
 
-                                    hashAmounts[trans.txHash].amount = Number(tokenDecimal
-                                        ? new BigNumber(trigger_info.parameter._amount).shiftedBy(-tokenDecimal)
-                                        : (trigger_info.parameter._amount || 0)
-                                    )
-                                } else if (internal_transactions) {
-                                    hashAmounts[trans.txHash] = {
-                                        method: trigger_info.method,
-                                    };
-                                    const internalTransactions: any = Object.values(internal_transactions);
-                                    hashAmounts[trans.txHash].amount = internalTransactions.reduce((acc, items) => {
-                                        const value = items.reduce((a, transactionData) => {
-                                            let tokenValue = 0;
-                                            if (transactionData.token_list && transactionData.token_list.length) {
-                                                hashAmounts[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName;
-                                                tokenValue = transactionData.token_list
-                                                    .reduce((ac, val) => ac + Number(new BigNumber(val.call_value).shiftedBy(-val.tokenInfo.tokenDecimal)), 0)
-                                            }
-                                            return tokenValue + a;
+                                            return value + acc;
                                         }, 0)
-
-                                        return value + acc;
-                                    }, 0)
+                                    }
                                 }
                             }
                         }
@@ -100,10 +103,11 @@ export async function getTransaction(addressTransaction, totalTransaction, versi
             headers.push({id: key, title: key})
         }
         const csvWriter = createCsvWriter({
-            path: `Transaction.csv`,
+            path: `Transaction_Unstake.csv`,
             header: headers
         });
         console.log(csvWriter.writeRecords(transaction))
+        return 'Ok, file create'
     } catch (e) {
         console.log('getTransaction', e)
     }
