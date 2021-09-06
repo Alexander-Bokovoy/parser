@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTransfer = exports.getTransaction = void 0;
+exports.getTransaction = void 0;
 var axios_1 = require("axios");
 var bignumber_js_1 = require("bignumber.js");
 function getTransaction(addressTransaction, totalTransaction, versionTransaction, contrType) {
@@ -64,11 +64,11 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                             switch (_b.label) {
                                 case 0:
                                     limit = 50;
-                                    start = 0;
+                                    start = 200;
                                     return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=1&contract=" + addressTransaction[i] + "&start=0")];
                                 case 1:
                                     data = _b.sent();
-                                    total = data.data.total;
+                                    total = 400;
                                     _loop_2 = function () {
                                         var data_2, hashAmounts_1, _loop_3, _i, data_1, trans, newTr, e_2;
                                         return __generator(this, function (_c) {
@@ -82,12 +82,15 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                 case 1:
                                                     data_2 = (_c.sent()).data.data;
                                                     start += limit;
+                                                    if (data_2.length === 0) {
+                                                        start -= limit;
+                                                    }
                                                     _c.label = 2;
                                                 case 2:
                                                     _c.trys.push([2, 9, , 10]);
                                                     hashAmounts_1 = {};
                                                     _loop_3 = function (trans) {
-                                                        var trInfo, _d, trigger_info, internal_transactions, contractRet, methodName, internalTransactions, internalTransactions;
+                                                        var trInfo, _d, trigger_info, internal_transactions, contractRet, tokenTransferInfo_1, methodName, internalTransactions, tokenTransfer;
                                                         return __generator(this, function (_e) {
                                                             switch (_e.label) {
                                                                 case 0:
@@ -95,10 +98,11 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                                     return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/transaction-info?hash=" + trans.txHash)];
                                                                 case 1:
                                                                     trInfo = _e.sent();
-                                                                    _d = trInfo.data, trigger_info = _d.trigger_info, internal_transactions = _d.internal_transactions, contractRet = _d.contractRet;
+                                                                    _d = trInfo.data, trigger_info = _d.trigger_info, internal_transactions = _d.internal_transactions, contractRet = _d.contractRet, tokenTransferInfo_1 = _d.tokenTransferInfo;
                                                                     methodName = trigger_info.method.toLowerCase();
+                                                                    console.log(methodName, trans.txHash);
                                                                     // Unstake
-                                                                    if (methodName.includes('Unstake')) {
+                                                                    if (methodName.includes('stake') || methodName.includes('unstake') || methodName.includes('claim')) {
                                                                         if (contractRet === 'SUCCESS') {
                                                                             if (trigger_info.parameter._amount) {
                                                                                 hashAmounts_1[trans.txHash] = {
@@ -109,7 +113,7 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                                                 internalTransactions.forEach(function (items) {
                                                                                     !hashAmounts_1[trans.txHash].token_info && items.forEach(function (transactionData) {
                                                                                         if (transactionData.token_list && transactionData.token_list.length) {
-                                                                                            hashAmounts_1[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName;
+                                                                                            hashAmounts_1[trans.txHash].token_info = tokenTransferInfo_1.symbol;
                                                                                         }
                                                                                     });
                                                                                 });
@@ -118,29 +122,42 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                                                     ? new bignumber_js_1.default(trigger_info.parameter._amount).shiftedBy(-18)
                                                                                     : (trigger_info.parameter._amount || 0);
                                                                             }
-                                                                            else if (internal_transactions) {
+                                                                            else if (tokenTransferInfo_1.name === "Wordlex") {
                                                                                 hashAmounts_1[trans.txHash] = {
                                                                                     method: trigger_info.method,
+                                                                                    token_info: null,
                                                                                 };
-                                                                                internalTransactions = Object.values(internal_transactions);
-                                                                                hashAmounts_1[trans.txHash].amount = internalTransactions.reduce(function (acc, items) {
-                                                                                    var value = items.reduce(function (a, transactionData) {
-                                                                                        var tokenValue = 0;
-                                                                                        if (transactionData.token_list && transactionData.token_list.length) {
-                                                                                            hashAmounts_1[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName;
-                                                                                            var jgjgjg = transactionData.token_list;
-                                                                                            for (var _i = 0, jgjgjg_1 = jgjgjg; _i < jgjgjg_1.length; _i++) {
-                                                                                                var token = jgjgjg_1[_i];
-                                                                                                // @ts-ignore
-                                                                                                tokenValue += Number(new bignumber_js_1.default(token.call_value).shiftedBy(-18));
-                                                                                            }
-                                                                                            console.log(tokenValue, "tokenValue");
-                                                                                        }
-                                                                                        return tokenValue + a;
-                                                                                    }, 0);
-                                                                                    return value + acc;
-                                                                                }, 0);
+                                                                                tokenTransfer = Object.values(tokenTransferInfo_1);
+                                                                                tokenTransfer.forEach(function (items) {
+                                                                                    hashAmounts_1[trans.txHash].token_info = tokenTransferInfo_1.symbol;
+                                                                                });
+                                                                                hashAmounts_1[trans.txHash].amount = Number
+                                                                                    ? new bignumber_js_1.default(tokenTransferInfo_1.amount_str).shiftedBy(-18)
+                                                                                    : (tokenTransferInfo_1.amount_str || 0);
+                                                                                console.log(hashAmounts_1[trans.txHash].amount, hashAmounts_1[trans.txHash].token_info);
                                                                             }
+                                                                            // else if (internal_transactions) {
+                                                                            //     hashAmounts[trans.txHash] = {
+                                                                            //         method: trigger_info.method,
+                                                                            //     };
+                                                                            //     const internalTransactions: any = Object.values(internal_transactions);
+                                                                            //     hashAmounts[trans.txHash].amount = internalTransactions.reduce((acc, items) => {
+                                                                            //         const value = items.reduce((a, transactionData) => {
+                                                                            //             let tokenValue = 0;
+                                                                            //             if (transactionData.token_list && transactionData.token_list.length) {
+                                                                            //                 hashAmounts[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName;
+                                                                            //                 let jgjgjg = transactionData.token_list as object[]
+                                                                            //                 for (const token of jgjgjg) {
+                                                                            //                     // @ts-ignore
+                                                                            //                     tokenValue += Number(new BigNumber(token.call_value).shiftedBy(-18))
+                                                                            //                 }
+                                                                            //             }
+                                                                            //             return tokenValue + a;
+                                                                            //         }, 0)
+                                                                            //
+                                                                            //         return value + acc;
+                                                                            //     }, 0)
+                                                                            // }
                                                                         }
                                                                     }
                                                                     _e.label = 2;
@@ -208,7 +225,7 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                         headers.push({ id: key, title: key });
                     }
                     csvWriter = createCsvWriter({
-                        path: "Transaction_Unstake.csv",
+                        path: "Transaction_STAKING(" + addressTransaction + ").csv",
                         header: headers
                     });
                     console.log(csvWriter.writeRecords(transaction));
@@ -223,107 +240,62 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
     });
 }
 exports.getTransaction = getTransaction;
-function getTransfer(addressTransfer, totalTransfer, versionTransfer) {
-    return __awaiter(this, void 0, void 0, function () {
-        var transfer, newTransfer_1, _loop_4, i, createCsvWriter, headers, i, key, csvWriter, e_3;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 5, , 6]);
-                    transfer = [];
-                    newTransfer_1 = [];
-                    _loop_4 = function (i) {
-                        var start, limit, data, data_3, newTr, e_4;
-                        return __generator(this, function (_b) {
-                            switch (_b.label) {
-                                case 0:
-                                    start = 0;
-                                    limit = 40;
-                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/token_trc20/transfers?limit=1&start=0&sort=-timestamp&count=true&relatedAddress=" + addressTransfer[i])];
-                                case 1:
-                                    data = _b.sent();
-                                    _b.label = 2;
-                                case 2:
-                                    if (!(start < data.data.total)) return [3 /*break*/, 9];
-                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/token_trc20/transfers?limit=" + limit + "&start=" + start + "&sort=-timestamp&count=true&relatedAddress=" + addressTransfer[i])];
-                                case 3:
-                                    data_3 = _b.sent();
-                                    start += limit;
-                                    _b.label = 4;
-                                case 4:
-                                    _b.trys.push([4, 7, , 8]);
-                                    return [4 /*yield*/, data_3.data.token_transfers.map(function (event) {
-                                            var date = new Date(event.block_ts).toISOString();
-                                            var valueQuant = event.quant;
-                                            if (event.tokenInfo.tokenAbbr === "WDX") {
-                                                valueQuant = Number(new bignumber_js_1.default(event.quant).shiftedBy(-18));
-                                            }
-                                            if (event.tokenInfo.tokenAbbr === "USDT") {
-                                                valueQuant = Number(new bignumber_js_1.default(event.quant).shiftedBy(-6));
-                                            }
-                                            newTransfer_1 = {
-                                                version: versionTransfer[i],
-                                                contract: addressTransfer[i],
-                                                transaction_id: event.transaction_id,
-                                                block: event.block,
-                                                block_ts: date,
-                                                from_address: event.from_address,
-                                                to_address: event.to_address,
-                                                confirmed: event.confirmed,
-                                                contractRet: event.contractRet,
-                                                quantity: valueQuant,
-                                                toAddressIsContract: event.toAddressIsContract,
-                                                tokenInfo: event.tokenInfo.tokenAbbr
-                                            };
-                                            return newTransfer_1;
-                                        })];
-                                case 5:
-                                    newTr = _b.sent();
-                                    console.log(limit, start, data_3.data.total, totalTransfer);
-                                    return [4 /*yield*/, transfer.concat(newTr)];
-                                case 6:
-                                    transfer = _b.sent();
-                                    return [3 /*break*/, 8];
-                                case 7:
-                                    e_4 = _b.sent();
-                                    console.log(e_4);
-                                    return [3 /*break*/, 8];
-                                case 8: return [3 /*break*/, 2];
-                                case 9: return [2 /*return*/];
-                            }
-                        });
-                    };
-                    i = 0;
-                    _a.label = 1;
-                case 1:
-                    if (!(i < addressTransfer.length)) return [3 /*break*/, 4];
-                    return [5 /*yield**/, _loop_4(i)];
-                case 2:
-                    _a.sent();
-                    _a.label = 3;
-                case 3:
-                    i++;
-                    return [3 /*break*/, 1];
-                case 4:
-                    createCsvWriter = require('csv-writer').createObjectCsvWriter;
-                    headers = [];
-                    for (i = 0; i < Object.keys(transfer[0]).length; i++) {
-                        key = Object.keys(transfer[0])[i];
-                        headers.push({ id: key, title: key });
-                    }
-                    csvWriter = createCsvWriter({
-                        path: "Transfer.csv",
-                        header: headers
-                    });
-                    console.log(csvWriter.writeRecords(transfer));
-                    return [3 /*break*/, 6];
-                case 5:
-                    e_3 = _a.sent();
-                    console.log('getTransaction', e_3);
-                    return [3 /*break*/, 6];
-                case 6: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.getTransfer = getTransfer;
+// export async function getTransfer(addressTransfer, totalTransfer, versionTransfer) {
+//     try {
+//         let transfer: any = []
+//         let newTransfer: any = []
+//         for (let i = 0; i < addressTransfer.length; i++) {
+//             let start = 0
+//             let limit = 40
+//             let data: any = await axios.get(`https://apilist.tronscan.org/api/token_trc20/transfers?limit=1&start=0&sort=-timestamp&count=true&relatedAddress=${addressTransfer[i]}`)
+//             while (start < data.data.total) {
+//                 let data: any = await axios.get(`https://apilist.tronscan.org/api/token_trc20/transfers?limit=${limit}&start=${start}&sort=-timestamp&count=true&relatedAddress=${addressTransfer[i]}`)
+//                 start += limit
+//                 try {
+//                     let newTr = await data.data.token_transfers.map(event => {
+//                         let date = new Date(event.block_ts).toISOString()
+//                         let valueQuant = event.quant
+//                         if (event.tokenInfo.tokenAbbr === "WDX") {
+//                             valueQuant = Number(new BigNumber(event.quant).shiftedBy(-18))
+//                         }
+//                         if (event.tokenInfo.tokenAbbr === "USDT") {
+//                             valueQuant = Number(new BigNumber(event.quant).shiftedBy(-6))
+//                         }
+//                         newTransfer = {
+//                             version: versionTransfer[i],
+//                             contract: addressTransfer[i],
+//                             transaction_id: event.transaction_id,
+//                             block: event.block,
+//                             block_ts: date,
+//                             from_address: event.from_address,
+//                             to_address: event.to_address,
+//                             confirmed: event.confirmed,
+//                             contractRet: event.contractRet,
+//                             quantity: valueQuant,
+//                             toAddressIsContract: event.toAddressIsContract,
+//                             tokenInfo: event.tokenInfo.tokenAbbr
+//                         }
+//                         return newTransfer
+//                     })
+//                     console.log(limit, start, data.data.total, totalTransfer)
+//                     transfer = await transfer.concat(newTr)
+//                 } catch (e) {
+//                     console.log(e)
+//                 }
+//             }
+//         }
+//         const createCsvWriter = require('csv-writer').createObjectCsvWriter
+//         const headers = []
+//         for (let i = 0; i < Object.keys(transfer[0]).length; i++) {
+//             const key = Object.keys(transfer[0])[i]
+//             headers.push({id: key, title: key})
+//         }
+//         const csvWriter = createCsvWriter({
+//             path: `Transfer.csv`,
+//             header: headers
+//         });
+//         console.log(csvWriter.writeRecords(transfer))
+//     } catch (e) {
+//         console.log('getTransaction', e)
+//     }
+// }
