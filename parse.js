@@ -64,11 +64,11 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                             switch (_b.label) {
                                 case 0:
                                     limit = 50;
-                                    start = 200;
+                                    start = 0;
                                     return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/contracts/transaction?sort=-timestamp&count=true&limit=1&contract=" + addressTransaction[i] + "&start=0")];
                                 case 1:
                                     data = _b.sent();
-                                    total = 400;
+                                    total = data.data.total;
                                     _loop_2 = function () {
                                         var data_2, hashAmounts_1, _loop_3, _i, data_1, trans, newTr, e_2;
                                         return __generator(this, function (_c) {
@@ -82,7 +82,7 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                 case 1:
                                                     data_2 = (_c.sent()).data.data;
                                                     start += limit;
-                                                    if (data_2.length === 0) {
+                                                    if (data_2.length === 0 || data_2.status === 500) {
                                                         start -= limit;
                                                     }
                                                     _c.label = 2;
@@ -90,19 +90,23 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                     _c.trys.push([2, 9, , 10]);
                                                     hashAmounts_1 = {};
                                                     _loop_3 = function (trans) {
-                                                        var trInfo, _d, trigger_info, internal_transactions, contractRet, tokenTransferInfo_1, methodName, internalTransactions, tokenTransfer;
+                                                        var trInfo, _d, trigger_info, internal_transactions, contractRet, tokenTransferInfo_1, methodName, internalTransactions, tokenTransfer, internalTransactions;
                                                         return __generator(this, function (_e) {
                                                             switch (_e.label) {
                                                                 case 0:
-                                                                    if (!(trans.hasOwnProperty('txHash') && trans.txHash)) return [3 /*break*/, 2];
-                                                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/transaction-info?hash=" + trans.txHash)];
+                                                                    console.log(trans.ownAddress, trans.toAddress, trans.txHash);
+                                                                    return [4 /*yield*/, (trans.hasOwnProperty('txHash') && trans.txHash)];
                                                                 case 1:
+                                                                    if (!_e.sent()) return [3 /*break*/, 3];
+                                                                    return [4 /*yield*/, axios_1.default.get("https://apilist.tronscan.org/api/transaction-info?hash=" + trans.txHash)];
+                                                                case 2:
                                                                     trInfo = _e.sent();
                                                                     _d = trInfo.data, trigger_info = _d.trigger_info, internal_transactions = _d.internal_transactions, contractRet = _d.contractRet, tokenTransferInfo_1 = _d.tokenTransferInfo;
-                                                                    methodName = trigger_info.method.toLowerCase();
+                                                                    methodName = trigger_info.method;
+                                                                    // .toLowerCase();
                                                                     console.log(methodName, trans.txHash);
                                                                     // Unstake
-                                                                    if (methodName.includes('stake') || methodName.includes('unstake') || methodName.includes('claim')) {
+                                                                    if (methodName.includes('claimBonuses()')) {
                                                                         if (contractRet === 'SUCCESS') {
                                                                             if (trigger_info.parameter._amount) {
                                                                                 hashAmounts_1[trans.txHash] = {
@@ -136,32 +140,32 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                                                                                     : (tokenTransferInfo_1.amount_str || 0);
                                                                                 console.log(hashAmounts_1[trans.txHash].amount, hashAmounts_1[trans.txHash].token_info);
                                                                             }
-                                                                            // else if (internal_transactions) {
-                                                                            //     hashAmounts[trans.txHash] = {
-                                                                            //         method: trigger_info.method,
-                                                                            //     };
-                                                                            //     const internalTransactions: any = Object.values(internal_transactions);
-                                                                            //     hashAmounts[trans.txHash].amount = internalTransactions.reduce((acc, items) => {
-                                                                            //         const value = items.reduce((a, transactionData) => {
-                                                                            //             let tokenValue = 0;
-                                                                            //             if (transactionData.token_list && transactionData.token_list.length) {
-                                                                            //                 hashAmounts[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName;
-                                                                            //                 let jgjgjg = transactionData.token_list as object[]
-                                                                            //                 for (const token of jgjgjg) {
-                                                                            //                     // @ts-ignore
-                                                                            //                     tokenValue += Number(new BigNumber(token.call_value).shiftedBy(-18))
-                                                                            //                 }
-                                                                            //             }
-                                                                            //             return tokenValue + a;
-                                                                            //         }, 0)
-                                                                            //
-                                                                            //         return value + acc;
-                                                                            //     }, 0)
-                                                                            // }
+                                                                            else if (internal_transactions) {
+                                                                                hashAmounts_1[trans.txHash] = {
+                                                                                    method: trigger_info.method,
+                                                                                };
+                                                                                internalTransactions = Object.values(internal_transactions);
+                                                                                hashAmounts_1[trans.txHash].amount = internalTransactions.reduce(function (acc, items) {
+                                                                                    var value = items.reduce(function (a, transactionData) {
+                                                                                        var tokenValue = 0;
+                                                                                        if (transactionData.token_list && transactionData.token_list.length) {
+                                                                                            hashAmounts_1[trans.txHash].token_info = transactionData.token_list[0].tokenInfo.tokenName;
+                                                                                            var jgjgjg = transactionData.token_list;
+                                                                                            for (var _i = 0, jgjgjg_1 = jgjgjg; _i < jgjgjg_1.length; _i++) {
+                                                                                                var token = jgjgjg_1[_i];
+                                                                                                // @ts-ignore
+                                                                                                tokenValue += Number(new bignumber_js_1.default(token.call_value).shiftedBy(-18));
+                                                                                            }
+                                                                                        }
+                                                                                        return tokenValue + a;
+                                                                                    }, 0);
+                                                                                    return value + acc;
+                                                                                }, 0);
+                                                                            }
                                                                         }
                                                                     }
-                                                                    _e.label = 2;
-                                                                case 2: return [2 /*return*/];
+                                                                    _e.label = 3;
+                                                                case 3: return [2 /*return*/];
                                                             }
                                                         });
                                                     };
@@ -225,7 +229,7 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
                         headers.push({ id: key, title: key });
                     }
                     csvWriter = createCsvWriter({
-                        path: "Transaction_STAKING(" + addressTransaction + ").csv",
+                        path: "AUTOPROGRAM_STATUS(claimBonuses).csv",
                         header: headers
                     });
                     console.log(csvWriter.writeRecords(transaction));
@@ -240,62 +244,3 @@ function getTransaction(addressTransaction, totalTransaction, versionTransaction
     });
 }
 exports.getTransaction = getTransaction;
-// export async function getTransfer(addressTransfer, totalTransfer, versionTransfer) {
-//     try {
-//         let transfer: any = []
-//         let newTransfer: any = []
-//         for (let i = 0; i < addressTransfer.length; i++) {
-//             let start = 0
-//             let limit = 40
-//             let data: any = await axios.get(`https://apilist.tronscan.org/api/token_trc20/transfers?limit=1&start=0&sort=-timestamp&count=true&relatedAddress=${addressTransfer[i]}`)
-//             while (start < data.data.total) {
-//                 let data: any = await axios.get(`https://apilist.tronscan.org/api/token_trc20/transfers?limit=${limit}&start=${start}&sort=-timestamp&count=true&relatedAddress=${addressTransfer[i]}`)
-//                 start += limit
-//                 try {
-//                     let newTr = await data.data.token_transfers.map(event => {
-//                         let date = new Date(event.block_ts).toISOString()
-//                         let valueQuant = event.quant
-//                         if (event.tokenInfo.tokenAbbr === "WDX") {
-//                             valueQuant = Number(new BigNumber(event.quant).shiftedBy(-18))
-//                         }
-//                         if (event.tokenInfo.tokenAbbr === "USDT") {
-//                             valueQuant = Number(new BigNumber(event.quant).shiftedBy(-6))
-//                         }
-//                         newTransfer = {
-//                             version: versionTransfer[i],
-//                             contract: addressTransfer[i],
-//                             transaction_id: event.transaction_id,
-//                             block: event.block,
-//                             block_ts: date,
-//                             from_address: event.from_address,
-//                             to_address: event.to_address,
-//                             confirmed: event.confirmed,
-//                             contractRet: event.contractRet,
-//                             quantity: valueQuant,
-//                             toAddressIsContract: event.toAddressIsContract,
-//                             tokenInfo: event.tokenInfo.tokenAbbr
-//                         }
-//                         return newTransfer
-//                     })
-//                     console.log(limit, start, data.data.total, totalTransfer)
-//                     transfer = await transfer.concat(newTr)
-//                 } catch (e) {
-//                     console.log(e)
-//                 }
-//             }
-//         }
-//         const createCsvWriter = require('csv-writer').createObjectCsvWriter
-//         const headers = []
-//         for (let i = 0; i < Object.keys(transfer[0]).length; i++) {
-//             const key = Object.keys(transfer[0])[i]
-//             headers.push({id: key, title: key})
-//         }
-//         const csvWriter = createCsvWriter({
-//             path: `Transfer.csv`,
-//             header: headers
-//         });
-//         console.log(csvWriter.writeRecords(transfer))
-//     } catch (e) {
-//         console.log('getTransaction', e)
-//     }
-// }
