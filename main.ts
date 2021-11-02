@@ -1,9 +1,13 @@
 import {getTransaction} from "./parse";
 import axios from "axios";
 import {compare} from "./compair";
-import {getContract, main, triggercontract} from "./tronWEB";
+import {getContract, getLiquid,} from "./tronWEB";
 import fetch from 'node-fetch';
 import {parseJSON} from "./parseJSON";
+import {getWQT} from "./etherscanETH_WQT";
+import {getMessageHash} from "./test-Bridge";
+import {getLiquidity} from "./WQLiquidity";
+import {apyAllPairs} from "./apyAllPairs";
 
 // TODO ::  Specify values for parsing.
 //  Example (address = [{address: String, contract_type: String, version: Number, type: String}])
@@ -73,7 +77,18 @@ const init = async () => {
 
     // await parseJSON()
     // await getContract();
-    await triggercontract()
+
+    // await triggercontract()
+
+    // await getLiquid()
+
+    // await getWQT()
+
+    // await getLiquidity()
+
+    await apyAllPairs();
+
+    // await getMessageHash()
 
     // await main()
     // await compare()

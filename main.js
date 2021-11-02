@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var tronWEB_1 = require("./tronWEB");
+var apyAllPairs_1 = require("./apyAllPairs");
 // TODO ::  Specify values for parsing.
 //  Example (address = [{address: String, contract_type: String, version: Number, type: String}])
 var address = [
@@ -98,11 +98,11 @@ var init = function () { return __awaiter(void 0, void 0, void 0, function () {
             // await getTransaction(addressTransaction, totalTransaction, versionTransaction, contrType)
             // await parseJSON()
             // await getContract();
-            return [4 /*yield*/, tronWEB_1.triggercontract()
-                // await main()
-                // await compare()
-                // await getTransfer(addressTransfer, totalTransfer, versionTransfer)
-            ];
+            // await triggercontract()
+            // await getLiquid()
+            // await getWQT()
+            // await getLiquidity()
+            return [4 /*yield*/, apyAllPairs_1.apyAllPairs()];
             case 1:
                 // let versionTransaction = []
                 // let addressTransaction = []
@@ -120,6 +120,10 @@ var init = function () { return __awaiter(void 0, void 0, void 0, function () {
                 // await getTransaction(addressTransaction, totalTransaction, versionTransaction, contrType)
                 // await parseJSON()
                 // await getContract();
+                // await triggercontract()
+                // await getLiquid()
+                // await getWQT()
+                // await getLiquidity()
                 _a.sent();
                 return [2 /*return*/];
         }
